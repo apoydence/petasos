@@ -9,11 +9,11 @@ import (
 	"testing"
 
 	"github.com/apoydence/eachers/testhelpers"
-	"github.com/apoydence/hydra/reader"
-	"github.com/apoydence/hydra/router"
 	"github.com/apoydence/onpar"
 	. "github.com/apoydence/onpar/expect"
 	. "github.com/apoydence/onpar/matchers"
+	"github.com/apoydence/petasos/reader"
+	"github.com/apoydence/petasos/router"
 )
 
 type TR struct {

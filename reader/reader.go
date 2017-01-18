@@ -5,7 +5,7 @@ import (
 	"io"
 	"sort"
 
-	"github.com/apoydence/hydra/router"
+	"github.com/apoydence/petasos/router"
 )
 
 type Reader interface {

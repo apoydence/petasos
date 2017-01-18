@@ -5,7 +5,7 @@
 
 package reader_test
 
-import "github.com/apoydence/hydra/reader"
+import "github.com/apoydence/petasos/reader"
 
 type mockReader struct {
 	ReadCalled chan bool

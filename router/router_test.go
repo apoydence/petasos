@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/apoydence/hydra/router"
 	"github.com/apoydence/onpar"
 	. "github.com/apoydence/onpar/expect"
 	. "github.com/apoydence/onpar/matchers"
+	"github.com/apoydence/petasos/router"
 )
 
 type TR struct {
