@@ -42,11 +42,14 @@ func TestRouter(t *testing.T) {
 		}
 	})
 
-	o.Group("when", func() {
+	o.Group("when there are two ranges", func() {
 		o.BeforeEach(func(t TR) TR {
 			t.mockFileSystem.ListOutput.File <- []string{
-				buildRangeName(0, 9223372036854775807),
-				buildRangeName(9223372036854775808, 18446744073709551615),
+				buildRangeName(0, 9223372036854775807, 0),
+				buildRangeName(9223372036854775808, 18446744073709551615, 3),
+
+				buildRangeName(9223372036854775808, 10000000000000000000, 1),  // Should not use
+				buildRangeName(10000000000000000000, 18446744073709551615, 2), // Should not use
 			}
 			t.mockFileSystem.ListOutput.Err <- nil
 
@@ -66,7 +69,7 @@ func TestRouter(t *testing.T) {
 			Expect(t, err == nil).To(BeTrue())
 
 			Expect(t, t.mockFileSystem.WriterInput.Name).To(
-				Chain(Receive(), MatchJSON(`{"Low":9223372036854775808,"High":18446744073709551615}`)),
+				Chain(Receive(), MatchJSON(`{"Low":9223372036854775808,"High":18446744073709551615,"Term":3}`)),
 			)
 
 			Expect(t, t.mockWriter.WriteInput.Data).To(
@@ -80,7 +83,7 @@ func TestRouter(t *testing.T) {
 			Expect(t, err == nil).To(BeTrue())
 
 			Expect(t, t.mockFileSystem.WriterInput.Name).To(
-				Chain(Receive(), MatchJSON(`{"Low":0, "High":9223372036854775807}`)),
+				Chain(Receive(), MatchJSON(`{"Low":0, "High":9223372036854775807,"Term":0}`)),
 			)
 
 			Expect(t, t.mockWriter.WriteInput.Data).To(
@@ -97,8 +100,8 @@ func TestRouter(t *testing.T) {
 				t.mockHasher.HashOutput.Err <- nil
 
 				t.mockFileSystem.ListOutput.File <- []string{
-					buildRangeName(0, 9223372036854775807),
-					buildRangeName(9223372036854775808, 18446744073709551615),
+					buildRangeName(0, 9223372036854775807, 0),
+					buildRangeName(9223372036854775808, 18446744073709551615, 1),
 				}
 				t.mockFileSystem.ListOutput.Err <- nil
 
@@ -154,10 +157,11 @@ func TestRouter(t *testing.T) {
 	})
 }
 
-func buildRangeName(low, high uint64) string {
+func buildRangeName(low, high, term uint64) string {
 	rn := router.RangeName{
 		Low:  low,
 		High: high,
+		Term: term,
 	}
 
 	j, _ := json.Marshal(rn)

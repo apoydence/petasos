@@ -29,8 +29,8 @@ type Router struct {
 }
 
 type hashRange struct {
-	file      string
-	low, high uint64
+	file string
+	r    RangeName
 }
 
 func New(fs FileSystem, hasher Hasher) *Router {
@@ -100,13 +100,18 @@ func (r *Router) fetchFromRange(hash uint64) (file string, err error) {
 		r.writers = make(map[uint64]Writer)
 	}
 
+	var matchedRange hashRange
 	for _, hashRange := range r.ranges {
-		if hash >= hashRange.low && hash <= hashRange.high {
-			return hashRange.file, nil
+		if hash >= hashRange.r.Low && hash <= hashRange.r.High && matchedRange.r.Term <= hashRange.r.Term {
+			matchedRange = hashRange
 		}
 	}
 
-	return "", fmt.Errorf("%d does not have a home", hash)
+	if matchedRange.file == "" {
+		return "", fmt.Errorf("%d does not have a home", hash)
+	}
+
+	return matchedRange.file, nil
 }
 
 func (r *Router) setupRanges() (ranges []hashRange, err error) {
@@ -116,15 +121,15 @@ func (r *Router) setupRanges() (ranges []hashRange, err error) {
 	}
 
 	for _, file := range list {
-		low, high, err := r.lowHigh(file)
+		var rn RangeName
+		err := json.Unmarshal([]byte(file), &rn)
 		if err != nil {
 			return nil, err
 		}
 
 		ranges = append(ranges, hashRange{
 			file: file,
-			low:  low,
-			high: high,
+			r:    rn,
 		})
 	}
 
