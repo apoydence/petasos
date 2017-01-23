@@ -9,12 +9,8 @@ import (
 	"github.com/apoydence/petasos/router"
 )
 
-type Metric struct {
-	WriteCount, ErrCount uint64
-}
-
 type RangeMetrics interface {
-	Metrics(file string) (metric Metric, err error)
+	Metrics(file string) (metric router.Metric, err error)
 }
 
 type FileSystem interface {

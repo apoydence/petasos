@@ -19,6 +19,10 @@ type Hasher interface {
 	Hash(data []byte) (hash uint64, err error)
 }
 
+type Metric struct {
+	WriteCount, ErrCount uint64
+}
+
 type Router struct {
 	fs     FileSystem
 	hasher Hasher

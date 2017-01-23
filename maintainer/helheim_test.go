@@ -5,7 +5,7 @@
 
 package maintainer_test
 
-import "github.com/apoydence/petasos/maintainer"
+import "github.com/apoydence/petasos/router"
 
 type mockRangeMetrics struct {
 	MetricsCalled chan bool
@@ -13,7 +13,7 @@ type mockRangeMetrics struct {
 		File chan string
 	}
 	MetricsOutput struct {
-		Metric chan maintainer.Metric
+		Metric chan router.Metric
 		Err    chan error
 	}
 }
@@ -22,11 +22,11 @@ func newMockRangeMetrics() *mockRangeMetrics {
 	m := &mockRangeMetrics{}
 	m.MetricsCalled = make(chan bool, 100)
 	m.MetricsInput.File = make(chan string, 100)
-	m.MetricsOutput.Metric = make(chan maintainer.Metric, 100)
+	m.MetricsOutput.Metric = make(chan router.Metric, 100)
 	m.MetricsOutput.Err = make(chan error, 100)
 	return m
 }
-func (m *mockRangeMetrics) Metrics(file string) (metric maintainer.Metric, err error) {
+func (m *mockRangeMetrics) Metrics(file string) (metric router.Metric, err error) {
 	m.MetricsCalled <- true
 	m.MetricsInput.File <- file
 	return <-m.MetricsOutput.Metric, <-m.MetricsOutput.Err

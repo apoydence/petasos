@@ -9,6 +9,7 @@ import (
 	. "github.com/apoydence/onpar/expect"
 	. "github.com/apoydence/onpar/matchers"
 	"github.com/apoydence/petasos/maintainer"
+	"github.com/apoydence/petasos/router"
 )
 
 func TestFillerOneWideGap(t *testing.T) {
@@ -229,9 +230,9 @@ func TestFillerGapFromErrs(t *testing.T) {
 			mockFileSystem:   mockFileSystem,
 			mockRangeMetrics: mockRangeMetrics,
 		}
-		go serviceMetricsWithErrs(tb, tb.repeatedFiles, map[string]maintainer.Metric{
-			files[0]: maintainer.Metric{WriteCount: 25},
-			files[1]: maintainer.Metric{WriteCount: 25, ErrCount: 10},
+		go serviceMetricsWithErrs(tb, tb.repeatedFiles, map[string]router.Metric{
+			files[0]: router.Metric{WriteCount: 25},
+			files[1]: router.Metric{WriteCount: 25, ErrCount: 10},
 		})
 
 		return tb
@@ -245,7 +246,7 @@ func TestFillerGapFromErrs(t *testing.T) {
 	})
 }
 
-func serviceMetricsWithErrs(t TB, repeater chan string, m map[string]maintainer.Metric) {
+func serviceMetricsWithErrs(t TB, repeater chan string, m map[string]router.Metric) {
 	for file := range t.mockRangeMetrics.MetricsInput.File {
 		t.mockRangeMetrics.MetricsOutput.Metric <- m[file]
 		t.mockRangeMetrics.MetricsOutput.Err <- nil

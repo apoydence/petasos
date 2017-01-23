@@ -248,7 +248,7 @@ func TestBalancerMinCounts(t *testing.T) {
 
 func serviceMetrics(t TB, repeater chan string, m map[string]uint64) {
 	for file := range t.mockRangeMetrics.MetricsInput.File {
-		t.mockRangeMetrics.MetricsOutput.Metric <- maintainer.Metric{WriteCount: m[file]}
+		t.mockRangeMetrics.MetricsOutput.Metric <- router.Metric{WriteCount: m[file]}
 		t.mockRangeMetrics.MetricsOutput.Err <- nil
 		repeater <- file
 	}
