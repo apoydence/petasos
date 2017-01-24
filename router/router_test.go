@@ -91,6 +91,16 @@ func TestRouter(t *testing.T) {
 			)
 		})
 
+		o.Spec("it reports how many times each router has been written to", func(t TR) {
+			t.mockHasher.HashOutput.Hash <- 1000000
+			t.r.Write([]byte("some-data"))
+
+			metric := t.r.Metrics(1000000)
+
+			Expect(t, metric.WriteCount).To(Equal(uint64(1)))
+			Expect(t, metric.ErrCount).To(Equal(uint64(0)))
+		})
+
 		o.Group("when a range becomes invalid", func() {
 			o.BeforeEach(func(t TR) TR {
 				t.mockHasher.HashOutput.Hash <- 1000000
@@ -119,6 +129,16 @@ func TestRouter(t *testing.T) {
 				t.r.Write([]byte("some-data"))
 
 				Expect(t, t.mockFileSystem.ListCalled).To(ViaPolling(HaveLen(2)))
+			})
+
+			o.Spec("it reports how many errors", func(t TR) {
+				t.r.Write([]byte("some-data"))
+				t.r.Write([]byte("some-data"))
+				t.r.Write([]byte("some-data"))
+
+				metric := t.r.Metrics(1000000)
+				Expect(t, metric.WriteCount).To(Equal(uint64(2)))
+				Expect(t, metric.ErrCount).To(Equal(uint64(1)))
 			})
 		})
 	})

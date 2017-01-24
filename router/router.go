@@ -27,9 +27,11 @@ type Router struct {
 	fs     FileSystem
 	hasher Hasher
 
+	// TODO Can we create a new router for each conn and not have a lock?
 	mu      sync.Mutex
 	ranges  []hashRange
 	writers map[uint64]Writer
+	metrics map[uint64]*Metric
 }
 
 type hashRange struct {
@@ -39,8 +41,9 @@ type hashRange struct {
 
 func New(fs FileSystem, hasher Hasher) *Router {
 	return &Router{
-		fs:     fs,
-		hasher: hasher,
+		fs:      fs,
+		hasher:  hasher,
+		metrics: make(map[uint64]*Metric),
 	}
 }
 
@@ -57,10 +60,39 @@ func (r *Router) Write(data []byte) (err error) {
 
 	if err = writer.Write(data); err != nil {
 		r.writeFailure()
+		r.incMetrics(hash, 0, 1)
+
 		return err
 	}
 
+	r.incMetrics(hash, 1, 0)
+
 	return nil
+}
+
+func (r *Router) Metrics(hash uint64) (metrics Metric) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	metric := r.metrics[hash]
+	if metric == nil {
+		return Metric{}
+	}
+
+	return *metric
+}
+
+func (r *Router) incMetrics(hash, write, err uint64) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	metric := r.metrics[hash]
+	if metric == nil {
+		metric = new(Metric)
+		r.metrics[hash] = metric
+	}
+
+	metric.WriteCount += write
+	metric.ErrCount += err
 }
 
 func (r *Router) writeFailure() {
