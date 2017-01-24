@@ -95,7 +95,12 @@ func TestRouter(t *testing.T) {
 			t.mockHasher.HashOutput.Hash <- 1000000
 			t.r.Write([]byte("some-data"))
 
-			metric := t.r.Metrics(1000000)
+			metric := t.r.Metrics(`
+			{
+				"Low":0,
+				"High":9223372036854775807,
+				"Term":0
+			}`)
 
 			Expect(t, metric.WriteCount).To(Equal(uint64(1)))
 			Expect(t, metric.ErrCount).To(Equal(uint64(0)))
@@ -136,7 +141,13 @@ func TestRouter(t *testing.T) {
 				t.r.Write([]byte("some-data"))
 				t.r.Write([]byte("some-data"))
 
-				metric := t.r.Metrics(1000000)
+				metric := t.r.Metrics(`
+			  {
+			  	"Low":0,
+			  	"High":9223372036854775807,
+			  	"Term":0
+			  }`)
+
 				Expect(t, metric.WriteCount).To(Equal(uint64(2)))
 				Expect(t, metric.ErrCount).To(Equal(uint64(1)))
 			})

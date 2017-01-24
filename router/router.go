@@ -23,6 +23,11 @@ type Metric struct {
 	WriteCount, ErrCount uint64
 }
 
+type writerInfo struct {
+	writer    Writer
+	rangeName RangeName
+}
+
 type Router struct {
 	fs     FileSystem
 	hasher Hasher
@@ -30,8 +35,8 @@ type Router struct {
 	// TODO Can we create a new router for each conn and not have a lock?
 	mu      sync.Mutex
 	ranges  []hashRange
-	writers map[uint64]Writer
-	metrics map[uint64]*Metric
+	writers map[uint64]writerInfo
+	metrics map[RangeName]*Metric
 }
 
 type hashRange struct {
@@ -43,7 +48,7 @@ func New(fs FileSystem, hasher Hasher) *Router {
 	return &Router{
 		fs:      fs,
 		hasher:  hasher,
-		metrics: make(map[uint64]*Metric),
+		metrics: make(map[RangeName]*Metric),
 	}
 }
 
@@ -58,37 +63,43 @@ func (r *Router) Write(data []byte) (err error) {
 		return err
 	}
 
-	if err = writer.Write(data); err != nil {
+	if err = writer.writer.Write(data); err != nil {
 		r.writeFailure()
-		r.incMetrics(hash, 0, 1)
+		r.incMetrics(writer.rangeName, 0, 1)
 
 		return err
 	}
 
-	r.incMetrics(hash, 1, 0)
+	r.incMetrics(writer.rangeName, 1, 0)
 
 	return nil
 }
 
-func (r *Router) Metrics(hash uint64) (metrics Metric) {
+func (r *Router) Metrics(file string) (metric Metric) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	metric := r.metrics[hash]
-	if metric == nil {
+	var rangeName RangeName
+	err := json.Unmarshal([]byte(file), &rangeName)
+	if err != nil {
 		return Metric{}
 	}
 
-	return *metric
+	m := r.metrics[rangeName]
+	if m == nil {
+		return Metric{}
+	}
+
+	return *m
 }
 
-func (r *Router) incMetrics(hash, write, err uint64) {
+func (r *Router) incMetrics(rangeName RangeName, write, err uint64) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	metric := r.metrics[hash]
+	metric := r.metrics[rangeName]
 	if metric == nil {
 		metric = new(Metric)
-		r.metrics[hash] = metric
+		r.metrics[rangeName] = metric
 	}
 
 	metric.WriteCount += write
@@ -103,7 +114,7 @@ func (r *Router) writeFailure() {
 	r.writers = nil
 }
 
-func (r *Router) fetchWriter(hash uint64) (writer Writer, err error) {
+func (r *Router) fetchWriter(hash uint64) (writer writerInfo, err error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -114,14 +125,23 @@ func (r *Router) fetchWriter(hash uint64) (writer Writer, err error) {
 
 	file, err := r.fetchFromRange(hash)
 	if err != nil {
-		return nil, err
+		return writerInfo{}, err
 	}
 
-	writer, err = r.fs.Writer(file)
+	w, err := r.fs.Writer(file)
 	if err != nil {
-		return nil, err
+		return writerInfo{}, err
 	}
 
+	var rangeName RangeName
+	if err := json.Unmarshal([]byte(file), &rangeName); err != nil {
+		return writerInfo{}, err
+	}
+
+	writer = writerInfo{
+		writer:    w,
+		rangeName: rangeName,
+	}
 	r.writers[hash] = writer
 
 	return writer, nil
@@ -133,7 +153,7 @@ func (r *Router) fetchFromRange(hash uint64) (file string, err error) {
 		if err != nil {
 			return "", err
 		}
-		r.writers = make(map[uint64]Writer)
+		r.writers = make(map[uint64]writerInfo)
 	}
 
 	var matchedRange hashRange
