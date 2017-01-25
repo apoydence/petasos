@@ -246,6 +246,52 @@ func TestBalancerMinCounts(t *testing.T) {
 	})
 }
 
+func TestBalancerEmptyRanges(t *testing.T) {
+	t.Parallel()
+	o := onpar.New()
+	defer o.Run(t)
+
+	o.BeforeEach(func(t *testing.T) TB {
+		mockFileSystem := newMockFileSystem()
+		mockRangeMetrics := newMockRangeMetrics()
+		maintainer.StartBalancer(mockRangeMetrics, mockFileSystem,
+			maintainer.WithBalancerInterval(time.Millisecond),
+			maintainer.WithMinCount(3),
+		)
+
+		testhelpers.AlwaysReturn(mockFileSystem.ListOutput.File, []string{})
+		close(mockFileSystem.ListOutput.Err)
+
+		return TB{
+			T: t,
+
+			repeatedFiles:    make(chan string, 100),
+			mockFileSystem:   mockFileSystem,
+			mockRangeMetrics: mockRangeMetrics,
+		}
+	})
+
+	o.Group("when there are no ranges", func() {
+		o.BeforeEach(func(t TB) TB {
+			close(t.mockFileSystem.ReadOnlyOutput.Err)
+			close(t.mockFileSystem.CreateOutput.Err)
+
+			go serviceMetrics(t, t.repeatedFiles, map[string]uint64{})
+
+			return t
+		})
+
+		o.Spec("it adds the minimum routes", func(t TB) {
+			s := toSlice(t.mockFileSystem.CreateInput.File, 3)
+			Expect(t, s).To(Contain(
+				buildRangeName(0, 6148914691236517205, 0),
+				buildRangeName(6148914691236517206, 12297829382473034410, 1),
+				buildRangeName(12297829382473034411, 18446744073709551615, 2),
+			))
+		})
+	})
+}
+
 func serviceMetrics(t TB, repeater chan string, m map[string]uint64) {
 	for file := range t.mockRangeMetrics.MetricsInput.File {
 		t.mockRangeMetrics.MetricsOutput.Metric <- router.Metric{WriteCount: m[file]}

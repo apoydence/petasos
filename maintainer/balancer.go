@@ -64,6 +64,7 @@ func (b *Balancer) run() {
 	for range time.Tick(b.conf.interval) {
 		ranges, lastTerm := validRanges(b.fs, b.rangeMetrics)
 		if len(ranges) == 0 {
+			b.seedRanges()
 			continue
 		}
 
@@ -79,6 +80,35 @@ func (b *Balancer) run() {
 		if first.writeCount < b.conf.minPerInterval && uint64(len(ranges)) > b.conf.min {
 			b.combineRange(first, ranges[1], lastTerm)
 			continue
+		}
+	}
+}
+
+func (b *Balancer) seedRanges() {
+	log.Print("Seeding ranges...")
+	defer log.Print("Done seeding ranges.")
+
+	width := 18446744073709551615 / b.conf.min
+
+	for i := uint64(0); i < b.conf.min; i++ {
+		newRange := router.RangeName{
+			Term: i,
+			Low:  i*width + 1,
+			High: (i + 1) * width,
+		}
+
+		if i == 0 {
+			newRange.Low = 0
+		}
+
+		if i == b.conf.min-1 {
+			newRange.High = 18446744073709551615
+		}
+
+		rangeName, _ := json.Marshal(newRange)
+
+		if err := b.fs.Create(string(rangeName)); err != nil {
+			log.Printf("Error creating file %s: %s", string(rangeName), err)
 		}
 	}
 }
