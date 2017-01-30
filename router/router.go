@@ -189,6 +189,10 @@ func (r *Router) setupRanges() (ranges []hashRange, err error) {
 		})
 	}
 
+	if len(ranges) == 0 {
+		return nil, fmt.Errorf("empty ranges")
+	}
+
 	return ranges, nil
 }
 

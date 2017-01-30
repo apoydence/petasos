@@ -10,6 +10,7 @@ import (
 
 type Reader interface {
 	Read() (data []byte, err error)
+	Close()
 }
 
 type FileSystem interface {
@@ -68,6 +69,7 @@ func (r *fileReader) Read() (data []byte, err error) {
 
 	data, err = r.currentFile.Read()
 	if err == io.EOF {
+		r.currentFile.Close()
 		r.currentFile = nil
 		return r.Read()
 	}
@@ -77,6 +79,10 @@ func (r *fileReader) Read() (data []byte, err error) {
 	}
 
 	return data, nil
+}
+
+func (r *fileReader) Close() {
+	r.currentFile.Close()
 }
 
 func (r *fileReader) fetchNextFile() (hashRange, error) {

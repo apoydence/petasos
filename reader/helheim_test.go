@@ -7,26 +7,6 @@ package reader_test
 
 import "github.com/apoydence/petasos/reader"
 
-type mockReader struct {
-	ReadCalled chan bool
-	ReadOutput struct {
-		Data chan []byte
-		Err  chan error
-	}
-}
-
-func newMockReader() *mockReader {
-	m := &mockReader{}
-	m.ReadCalled = make(chan bool, 100)
-	m.ReadOutput.Data = make(chan []byte, 100)
-	m.ReadOutput.Err = make(chan error, 100)
-	return m
-}
-func (m *mockReader) Read() (data []byte, err error) {
-	m.ReadCalled <- true
-	return <-m.ReadOutput.Data, <-m.ReadOutput.Err
-}
-
 type mockFileSystem struct {
 	ListCalled chan bool
 	ListOutput struct {
@@ -62,4 +42,29 @@ func (m *mockFileSystem) Reader(name string) (reader reader.Reader, err error) {
 	m.ReaderCalled <- true
 	m.ReaderInput.Name <- name
 	return <-m.ReaderOutput.Reader, <-m.ReaderOutput.Err
+}
+
+type mockReader struct {
+	ReadCalled chan bool
+	ReadOutput struct {
+		Data chan []byte
+		Err  chan error
+	}
+	CloseCalled chan bool
+}
+
+func newMockReader() *mockReader {
+	m := &mockReader{}
+	m.ReadCalled = make(chan bool, 100)
+	m.ReadOutput.Data = make(chan []byte, 100)
+	m.ReadOutput.Err = make(chan error, 100)
+	m.CloseCalled = make(chan bool, 100)
+	return m
+}
+func (m *mockReader) Read() (data []byte, err error) {
+	m.ReadCalled <- true
+	return <-m.ReadOutput.Data, <-m.ReadOutput.Err
+}
+func (m *mockReader) Close() {
+	m.CloseCalled <- true
 }
