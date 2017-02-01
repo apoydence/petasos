@@ -5,6 +5,7 @@ package maintainer_test
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -214,9 +215,6 @@ func TestBalancerMinCounts(t *testing.T) {
 			buildRangeName(9223372036854775808, 18446744073709551615, 3), // Valid
 		}
 
-		testhelpers.AlwaysReturn(mockFileSystem.ListOutput.File, files)
-		close(mockFileSystem.ListOutput.Err)
-
 		return TB{
 			T: t,
 
@@ -232,6 +230,9 @@ func TestBalancerMinCounts(t *testing.T) {
 			close(t.mockFileSystem.ReadOnlyOutput.Err)
 			close(t.mockFileSystem.CreateOutput.Err)
 
+			testhelpers.AlwaysReturn(t.mockFileSystem.ListOutput.File, t.files)
+			close(t.mockFileSystem.ListOutput.Err)
+
 			go serviceMetrics(t, t.repeatedFiles, map[string]uint64{
 				t.files[2]: 25,
 				t.files[3]: 1,
@@ -244,6 +245,7 @@ func TestBalancerMinCounts(t *testing.T) {
 			Expect(t, t.mockFileSystem.CreateCalled).To(Always(HaveLen(0)))
 		})
 	})
+
 }
 
 func TestBalancerEmptyRanges(t *testing.T) {
@@ -259,9 +261,6 @@ func TestBalancerEmptyRanges(t *testing.T) {
 			maintainer.WithMinCount(3),
 		)
 
-		testhelpers.AlwaysReturn(mockFileSystem.ListOutput.File, []string{})
-		close(mockFileSystem.ListOutput.Err)
-
 		return TB{
 			T: t,
 
@@ -276,6 +275,9 @@ func TestBalancerEmptyRanges(t *testing.T) {
 			close(t.mockFileSystem.ReadOnlyOutput.Err)
 			close(t.mockFileSystem.CreateOutput.Err)
 
+			testhelpers.AlwaysReturn(t.mockFileSystem.ListOutput.File, []string{})
+			close(t.mockFileSystem.ListOutput.Err)
+
 			go serviceMetrics(t, t.repeatedFiles, map[string]uint64{})
 
 			return t
@@ -288,6 +290,21 @@ func TestBalancerEmptyRanges(t *testing.T) {
 				buildRangeName(6148914691236517206, 12297829382473034410, 1),
 				buildRangeName(12297829382473034411, 18446744073709551615, 2),
 			))
+		})
+	})
+
+	o.Group("when listing does not work", func() {
+		o.BeforeEach(func(t TB) TB {
+			close(t.mockFileSystem.ReadOnlyOutput.Err)
+			close(t.mockFileSystem.CreateOutput.Err)
+
+			close(t.mockFileSystem.ListOutput.File)
+			testhelpers.AlwaysReturn(t.mockFileSystem.ListOutput.Err, fmt.Errorf("some-error"))
+			return t
+		})
+
+		o.Spec("does not seed routes", func(t TB) {
+			Expect(t, t.mockFileSystem.CreateCalled).To(Always(HaveLen(0)))
 		})
 	})
 }

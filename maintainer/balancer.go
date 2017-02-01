@@ -62,7 +62,11 @@ func StartBalancer(rangeMetrics RangeMetrics, fs FileSystem, opts ...BalancerOpt
 
 func (b *Balancer) run() {
 	for range time.Tick(b.conf.interval) {
-		ranges, lastTerm := validRanges(b.fs, b.rangeMetrics)
+		ranges, lastTerm, ok := validRanges(b.fs, b.rangeMetrics)
+		if !ok {
+			continue
+		}
+
 		if len(ranges) == 0 {
 			b.seedRanges()
 			continue
@@ -181,11 +185,11 @@ func (b *Balancer) splitRange(last rangeInfo, lastTerm uint64) {
 	}
 }
 
-func validRanges(fs FileSystem, rangeMetrics RangeMetrics) (ranges []rangeInfo, lastTerm uint64) {
+func validRanges(fs FileSystem, rangeMetrics RangeMetrics) (ranges []rangeInfo, lastTerm uint64, ok bool) {
 	list, err := fs.List()
 	if err != nil {
 		log.Printf("Failed to list files: %s", err)
-		return nil, 0
+		return nil, 0, false
 	}
 
 	for _, file := range list {
@@ -218,7 +222,7 @@ func validRanges(fs FileSystem, rangeMetrics RangeMetrics) (ranges []rangeInfo, 
 
 	ranges = removeOverlaps(ranges)
 
-	return ranges, lastTerm
+	return ranges, lastTerm, true
 }
 
 func removeOverlaps(ranges []rangeInfo) (result []rangeInfo) {

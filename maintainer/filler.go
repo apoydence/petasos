@@ -42,7 +42,7 @@ func StartFiller(rangeMetrics RangeMetrics, fs FileSystem, opts ...FillerOpts) *
 
 func (f *Filler) run() {
 	for range time.Tick(f.conf.interval) {
-		ranges, lastTerm := validRanges(f.fs, f.rangeMetrics)
+		ranges, lastTerm, _ := validRanges(f.fs, f.rangeMetrics)
 		if len(ranges) == 0 {
 			continue
 		}
