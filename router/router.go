@@ -3,6 +3,7 @@ package router
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"sync"
 )
 
@@ -60,6 +61,7 @@ func (r *Router) Write(data []byte) (err error) {
 
 	writer, err := r.fetchWriter(hash)
 	if err != nil {
+		r.writeFailure()
 		return err
 	}
 
@@ -180,7 +182,8 @@ func (r *Router) setupRanges() (ranges []hashRange, err error) {
 		var rn RangeName
 		err := json.Unmarshal([]byte(file), &rn)
 		if err != nil {
-			return nil, err
+			log.Printf("Non-petasos range: %s", file)
+			continue
 		}
 
 		ranges = append(ranges, hashRange{
