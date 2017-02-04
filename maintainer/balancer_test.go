@@ -75,8 +75,6 @@ func TestBalancer(t *testing.T) {
 
 	o.Group("when one range has too much data", func() {
 		o.BeforeEach(func(t TB) TB {
-
-			close(t.mockFileSystem.ReadOnlyOutput.Err)
 			close(t.mockFileSystem.CreateOutput.Err)
 
 			go serviceMetrics(t, t.repeatedFiles, map[string]uint64{
@@ -100,17 +98,10 @@ func TestBalancer(t *testing.T) {
 				buildRangeName(4611686018427387904, 9223372036854775807, 5),
 			))
 		})
-
-		o.Spec("it sets the old range to read only", func(t TB) {
-			Expect(t, t.mockFileSystem.ReadOnlyInput.File).To(ViaPolling(
-				Chain(Receive(), Equal(t.files[2])),
-			))
-		})
 	})
 
 	o.Group("when one range has too little data", func() {
 		o.BeforeEach(func(t TB) TB {
-			close(t.mockFileSystem.ReadOnlyOutput.Err)
 			close(t.mockFileSystem.CreateOutput.Err)
 
 			go serviceMetrics(t, t.repeatedFiles, map[string]uint64{
@@ -127,16 +118,6 @@ func TestBalancer(t *testing.T) {
 				buildRangeName(0, 18446744073709551615, 4),
 			))
 		})
-
-		o.Spec("it sets the old ranges to read only", func(t TB) {
-			Expect(t, t.mockFileSystem.ReadOnlyInput.File).To(ViaPolling(
-				Chain(Receive(), Equal(t.files[2])),
-			))
-			Expect(t, t.mockFileSystem.ReadOnlyInput.File).To(ViaPolling(
-				Chain(Receive(), Equal(t.files[3])),
-			))
-		})
-
 	})
 }
 
@@ -177,7 +158,6 @@ func TestBalancerMaxCounts(t *testing.T) {
 
 	o.Group("when one range has too much data but there are too many ranges", func() {
 		o.BeforeEach(func(t TB) TB {
-			close(t.mockFileSystem.ReadOnlyOutput.Err)
 			close(t.mockFileSystem.CreateOutput.Err)
 
 			go serviceMetrics(t, t.repeatedFiles, map[string]uint64{
@@ -227,7 +207,6 @@ func TestBalancerMinCounts(t *testing.T) {
 
 	o.Group("when one range has too little data but there are too few ranges", func() {
 		o.BeforeEach(func(t TB) TB {
-			close(t.mockFileSystem.ReadOnlyOutput.Err)
 			close(t.mockFileSystem.CreateOutput.Err)
 
 			testhelpers.AlwaysReturn(t.mockFileSystem.ListOutput.File, t.files)
@@ -272,7 +251,6 @@ func TestBalancerEmptyRanges(t *testing.T) {
 
 	o.Group("when there are no ranges", func() {
 		o.BeforeEach(func(t TB) TB {
-			close(t.mockFileSystem.ReadOnlyOutput.Err)
 			close(t.mockFileSystem.CreateOutput.Err)
 
 			testhelpers.AlwaysReturn(t.mockFileSystem.ListOutput.File, []string{})
@@ -295,7 +273,6 @@ func TestBalancerEmptyRanges(t *testing.T) {
 
 	o.Group("when listing does not work", func() {
 		o.BeforeEach(func(t TB) TB {
-			close(t.mockFileSystem.ReadOnlyOutput.Err)
 			close(t.mockFileSystem.CreateOutput.Err)
 
 			close(t.mockFileSystem.ListOutput.File)

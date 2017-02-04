@@ -40,13 +40,6 @@ type mockFileSystem struct {
 	CreateOutput struct {
 		Err chan error
 	}
-	ReadOnlyCalled chan bool
-	ReadOnlyInput  struct {
-		File chan string
-	}
-	ReadOnlyOutput struct {
-		Err chan error
-	}
 	ListCalled chan bool
 	ListOutput struct {
 		File chan []string
@@ -59,9 +52,6 @@ func newMockFileSystem() *mockFileSystem {
 	m.CreateCalled = make(chan bool, 100)
 	m.CreateInput.File = make(chan string, 100)
 	m.CreateOutput.Err = make(chan error, 100)
-	m.ReadOnlyCalled = make(chan bool, 100)
-	m.ReadOnlyInput.File = make(chan string, 100)
-	m.ReadOnlyOutput.Err = make(chan error, 100)
 	m.ListCalled = make(chan bool, 100)
 	m.ListOutput.File = make(chan []string, 100)
 	m.ListOutput.Err = make(chan error, 100)
@@ -71,11 +61,6 @@ func (m *mockFileSystem) Create(file string) (err error) {
 	m.CreateCalled <- true
 	m.CreateInput.File <- file
 	return <-m.CreateOutput.Err
-}
-func (m *mockFileSystem) ReadOnly(file string) (err error) {
-	m.ReadOnlyCalled <- true
-	m.ReadOnlyInput.File <- file
-	return <-m.ReadOnlyOutput.Err
 }
 func (m *mockFileSystem) List() (file []string, err error) {
 	m.ListCalled <- true

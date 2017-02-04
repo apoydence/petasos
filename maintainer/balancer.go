@@ -15,7 +15,6 @@ type RangeMetrics interface {
 
 type FileSystem interface {
 	Create(file string) (err error)
-	ReadOnly(file string) (err error)
 	List() (file []string, err error)
 }
 
@@ -142,14 +141,6 @@ func (b *Balancer) combineRange(first, next rangeInfo, lastTerm uint64) {
 	if err := b.fs.Create(string(combinedName)); err != nil {
 		log.Printf("Error creating file %s: %s", string(combinedName), err)
 	}
-
-	if err := b.fs.ReadOnly(first.file); err != nil {
-		log.Printf("Error setting file %s: %s", first.file, err)
-	}
-
-	if err := b.fs.ReadOnly(next.file); err != nil {
-		log.Printf("Error setting file %s: %s", next.file, err)
-	}
 }
 
 func (b *Balancer) splitRange(last rangeInfo, lastTerm uint64) {
@@ -178,10 +169,6 @@ func (b *Balancer) splitRange(last rangeInfo, lastTerm uint64) {
 
 	if err := b.fs.Create(string(highName)); err != nil {
 		log.Printf("Error creating file %s to read only: %s", string(highName), err)
-	}
-
-	if err := b.fs.ReadOnly(last.file); err != nil {
-		log.Printf("Error setting file %s to read only: %s", last.file, err)
 	}
 }
 
