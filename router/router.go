@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"sync"
 )
 
 type Writer interface {
@@ -20,8 +19,9 @@ type Hasher interface {
 	Hash(data []byte) (hash uint64, err error)
 }
 
-type Metric struct {
-	WriteCount, ErrCount uint64
+type MetricsCounter interface {
+	IncSuccess(name RangeName)
+	IncFailure(name RangeName)
 }
 
 type writerInfo struct {
@@ -30,14 +30,12 @@ type writerInfo struct {
 }
 
 type Router struct {
-	fs     FileSystem
-	hasher Hasher
+	fs             FileSystem
+	hasher         Hasher
+	metricsCounter MetricsCounter
 
-	// TODO Can we create a new router for each conn and not have a lock?
-	mu      sync.Mutex
 	ranges  []hashRange
 	writers map[uint64]writerInfo
-	metrics map[RangeName]*Metric
 }
 
 type hashRange struct {
@@ -45,11 +43,11 @@ type hashRange struct {
 	r    RangeName
 }
 
-func New(fs FileSystem, hasher Hasher) *Router {
+func New(fs FileSystem, hasher Hasher, metricsCounter MetricsCounter) *Router {
 	return &Router{
-		fs:      fs,
-		hasher:  hasher,
-		metrics: make(map[RangeName]*Metric),
+		fs:             fs,
+		hasher:         hasher,
+		metricsCounter: metricsCounter,
 	}
 }
 
@@ -67,59 +65,22 @@ func (r *Router) Write(data []byte) (err error) {
 
 	if err = writer.writer.Write(data); err != nil {
 		r.writeFailure()
-		r.incMetrics(writer.rangeName, 0, 1)
+		r.metricsCounter.IncFailure(writer.rangeName)
 
 		return err
 	}
 
-	r.incMetrics(writer.rangeName, 1, 0)
+	r.metricsCounter.IncSuccess(writer.rangeName)
 
 	return nil
 }
 
-func (r *Router) Metrics(file string) (metric Metric) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	var rangeName RangeName
-	err := json.Unmarshal([]byte(file), &rangeName)
-	if err != nil {
-		return Metric{}
-	}
-
-	m := r.metrics[rangeName]
-	if m == nil {
-		return Metric{}
-	}
-
-	return *m
-}
-
-func (r *Router) incMetrics(rangeName RangeName, write, err uint64) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	metric := r.metrics[rangeName]
-	if metric == nil {
-		metric = new(Metric)
-		r.metrics[rangeName] = metric
-	}
-
-	metric.WriteCount += write
-	metric.ErrCount += err
-}
-
 func (r *Router) writeFailure() {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
 	r.ranges = nil
 	r.writers = nil
 }
 
 func (r *Router) fetchWriter(hash uint64) (writer writerInfo, err error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
 	writer, ok := r.writers[hash]
 	if ok {
 		return writer, nil

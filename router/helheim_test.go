@@ -91,3 +91,31 @@ func (m *mockHasher) Hash(data []byte) (hash uint64, err error) {
 	m.HashInput.Data <- data
 	return <-m.HashOutput.Hash, <-m.HashOutput.Err
 }
+
+type mockMetricsCounter struct {
+	IncSuccessCalled chan bool
+	IncSuccessInput  struct {
+		Name chan router.RangeName
+	}
+	IncFailureCalled chan bool
+	IncFailureInput  struct {
+		Name chan router.RangeName
+	}
+}
+
+func newMockMetricsCounter() *mockMetricsCounter {
+	m := &mockMetricsCounter{}
+	m.IncSuccessCalled = make(chan bool, 100)
+	m.IncSuccessInput.Name = make(chan router.RangeName, 100)
+	m.IncFailureCalled = make(chan bool, 100)
+	m.IncFailureInput.Name = make(chan router.RangeName, 100)
+	return m
+}
+func (m *mockMetricsCounter) IncSuccess(name router.RangeName) {
+	m.IncSuccessCalled <- true
+	m.IncSuccessInput.Name <- name
+}
+func (m *mockMetricsCounter) IncFailure(name router.RangeName) {
+	m.IncFailureCalled <- true
+	m.IncFailureInput.Name <- name
+}
