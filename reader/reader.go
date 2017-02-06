@@ -54,31 +54,33 @@ func newFileReader(hash uint64, fs FileSystem) *fileReader {
 }
 
 func (r *fileReader) Read() (data []byte, err error) {
-	if r.currentFile == nil {
-		next, err := r.fetchNextFile()
+	for {
+		if r.currentFile == nil {
+			next, err := r.fetchNextFile()
+			if err != nil {
+				return nil, err
+			}
+
+			reader, err := r.fs.Reader(next.file)
+			if err != nil {
+				return nil, err
+			}
+			r.currentFile = reader
+		}
+
+		data, err = r.currentFile.Read()
+		if err == io.EOF {
+			r.currentFile.Close()
+			r.currentFile = nil
+			continue
+		}
+
 		if err != nil {
 			return nil, err
 		}
 
-		reader, err := r.fs.Reader(next.file)
-		if err != nil {
-			return nil, err
-		}
-		r.currentFile = reader
+		return data, nil
 	}
-
-	data, err = r.currentFile.Read()
-	if err == io.EOF {
-		r.currentFile.Close()
-		r.currentFile = nil
-		return r.Read()
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
 }
 
 func (r *fileReader) Close() {
@@ -90,8 +92,6 @@ func (r *fileReader) fetchNextFile() (hashRange, error) {
 	if err != nil {
 		return hashRange{}, err
 	}
-
-	sort.Sort(hashRanges(files))
 
 	if len(files) == 0 {
 		return hashRange{}, io.EOF
@@ -113,11 +113,25 @@ func (r *fileReader) fetchFromRange() (files []hashRange, err error) {
 		return nil, err
 	}
 
-	var matchedRange []hashRange
+	if len(ranges) == 0 {
+		return nil, nil
+	}
+
+	sort.Sort(hashRanges(files))
+
+	var (
+		matchedRange []hashRange
+		lastRange    hashRange
+	)
 	for _, hashRange := range ranges {
 		if r.hash >= hashRange.r.Low && r.hash <= hashRange.r.High && r.notInHistory(hashRange) {
 			matchedRange = append(matchedRange, hashRange)
 		}
+		lastRange = hashRange
+	}
+
+	if len(matchedRange) == 0 {
+		delete(r.history, lastRange)
 	}
 
 	return matchedRange, nil

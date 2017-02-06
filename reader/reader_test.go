@@ -86,6 +86,28 @@ func TestReader(t *testing.T) {
 				Chain(Receive(), MatchJSON(`{"Low":9223372036854775808,"High":18446744073709551615,"Term":2}`)),
 			)
 		})
+
+		o.Spec("it continues to read from the last range", func(t TR) {
+			testhelpers.AlwaysReturn(t.mockReader.ReadOutput.Err, io.EOF)
+			close(t.mockReader.ReadOutput.Data)
+
+			reader := t.r.ReadFrom(10000000000000000000)
+
+			reader.Read()
+			reader.Read()
+			reader.Read()
+			reader.Read()
+
+			Expect(t, t.mockFileSystem.ReaderInput.Name).To(
+				Chain(Receive(), MatchJSON(`{"Low":9223372036854775808,"High":10000000000000000000,"Term":0}`)),
+			)
+			Expect(t, t.mockFileSystem.ReaderInput.Name).To(
+				Chain(Receive(), MatchJSON(`{"Low":9223372036854775808,"High":18446744073709551615,"Term":2}`)),
+			)
+			Expect(t, t.mockFileSystem.ReaderInput.Name).To(
+				Chain(Receive(), MatchJSON(`{"Low":9223372036854775808,"High":18446744073709551615,"Term":2}`)),
+			)
+		})
 	})
 }
 
