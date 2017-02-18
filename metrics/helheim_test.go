@@ -30,6 +30,31 @@ func (m *mockRouter) Metrics(file string) (metric router.Metric) {
 	return <-m.MetricsOutput.Metric
 }
 
+type mockMetrics struct {
+	MetricsCalled chan bool
+	MetricsInput  struct {
+		File chan string
+	}
+	MetricsOutput struct {
+		Metric chan router.Metric
+		Err    chan error
+	}
+}
+
+func newMockMetrics() *mockMetrics {
+	m := &mockMetrics{}
+	m.MetricsCalled = make(chan bool, 100)
+	m.MetricsInput.File = make(chan string, 100)
+	m.MetricsOutput.Metric = make(chan router.Metric, 100)
+	m.MetricsOutput.Err = make(chan error, 100)
+	return m
+}
+func (m *mockMetrics) Metrics(file string) (metric router.Metric, err error) {
+	m.MetricsCalled <- true
+	m.MetricsInput.File <- file
+	return <-m.MetricsOutput.Metric, <-m.MetricsOutput.Err
+}
+
 type mockNetworkReader struct {
 	ReadMetricsCalled chan bool
 	ReadMetricsInput  struct {
