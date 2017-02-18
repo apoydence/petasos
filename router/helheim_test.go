@@ -15,6 +15,7 @@ type mockWriter struct {
 	WriteOutput struct {
 		Err chan error
 	}
+	CloseCalled chan bool
 }
 
 func newMockWriter() *mockWriter {
@@ -22,12 +23,16 @@ func newMockWriter() *mockWriter {
 	m.WriteCalled = make(chan bool, 100)
 	m.WriteInput.Data = make(chan []byte, 100)
 	m.WriteOutput.Err = make(chan error, 100)
+	m.CloseCalled = make(chan bool, 100)
 	return m
 }
 func (m *mockWriter) Write(data []byte) (err error) {
 	m.WriteCalled <- true
 	m.WriteInput.Data <- data
 	return <-m.WriteOutput.Err
+}
+func (m *mockWriter) Close() {
+	m.CloseCalled <- true
 }
 
 type mockFileSystem struct {

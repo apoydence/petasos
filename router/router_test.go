@@ -137,6 +137,14 @@ func TestRouter(t *testing.T) {
 				Expect(t, t.mockFileSystem.ListCalled).To(ViaPolling(HaveLen(2)))
 			})
 
+			o.Spec("it closes the previous writers", func(t TR) {
+				t.r.Write([]byte("some-data"))
+				t.r.Write([]byte("some-data"))
+				t.r.Write([]byte("some-data"))
+
+				Expect(t, t.mockWriter.CloseCalled).To(ViaPolling(HaveLen(1)))
+			})
+
 			o.Spec("it reports how many errors", func(t TR) {
 				t.r.Write([]byte("some-data"))
 				t.r.Write([]byte("some-data"))

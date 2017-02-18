@@ -8,6 +8,7 @@ import (
 
 type Writer interface {
 	Write(data []byte) (err error)
+	Close()
 }
 
 type FileSystem interface {
@@ -76,6 +77,10 @@ func (r *Router) Write(data []byte) (err error) {
 }
 
 func (r *Router) writeFailure() {
+	for _, w := range r.writers {
+		w.writer.Close()
+	}
+
 	r.ranges = nil
 	r.writers = nil
 }
