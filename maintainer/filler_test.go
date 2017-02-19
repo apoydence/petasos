@@ -52,7 +52,7 @@ func TestFillerOneWideGap(t *testing.T) {
 	})
 
 	o.Spec("it adds a range to fill the gap", func(t TB) {
-		files := toSlice(t.mockFileSystem.CreateInput.File, 1)
+		files := stripRand(toSlice(t.mockFileSystem.CreateInput.File, 1))
 		Expect(t, files).To(Contain(
 			buildRangeName(9223372036854775808, 9223372036854775808, 4),
 		))
@@ -99,7 +99,7 @@ func TestFillerEndGap(t *testing.T) {
 	})
 
 	o.Spec("it adds a range to fill the gap", func(t TB) {
-		files := toSlice(t.mockFileSystem.CreateInput.File, 1)
+		files := stripRand(toSlice(t.mockFileSystem.CreateInput.File, 1))
 		Expect(t, files).To(Contain(
 			buildRangeName(18446744073709551615, 18446744073709551615, 4),
 		))
@@ -146,7 +146,7 @@ func TestFillerStartGap(t *testing.T) {
 	})
 
 	o.Spec("it adds a range to fill the gap", func(t TB) {
-		files := toSlice(t.mockFileSystem.CreateInput.File, 1)
+		files := stripRand(toSlice(t.mockFileSystem.CreateInput.File, 1))
 		Expect(t, files).To(Contain(
 			buildRangeName(0, 9, 4),
 		))
@@ -194,7 +194,7 @@ func TestFillerMidWayGap(t *testing.T) {
 	})
 
 	o.Spec("it adds a range to fill the gap", func(t TB) {
-		files := toSlice(t.mockFileSystem.CreateInput.File, 1)
+		files := stripRand(toSlice(t.mockFileSystem.CreateInput.File, 1))
 		Expect(t, files).To(Contain(
 			buildRangeName(9223372036854775808, 9999999999999999999, 4),
 		))
@@ -239,7 +239,7 @@ func TestFillerGapFromErrs(t *testing.T) {
 	})
 
 	o.Spec("it adds a range to fill the gap", func(t TB) {
-		files := toSlice(t.mockFileSystem.CreateInput.File, 1)
+		files := stripRand(toSlice(t.mockFileSystem.CreateInput.File, 1))
 		Expect(t, files).To(Contain(
 			buildRangeName(8000000000000000001, 18446744073709551615, 2),
 		))

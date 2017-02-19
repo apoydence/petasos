@@ -86,17 +86,26 @@ func TestBalancer(t *testing.T) {
 		})
 
 		o.Spec("it queries each file", func(t TB) {
-			s := toSlice(t.repeatedFiles, 4)
+			s := stripRand(toSlice(t.repeatedFiles, 4))
 
 			Expect(t, s).To(Contain(t.files[2], t.files[3]))
 		})
 
 		o.Spec("it splits the range", func(t TB) {
-			files := toSlice(t.mockFileSystem.CreateInput.File, 2)
+			files := stripRand(toSlice(t.mockFileSystem.CreateInput.File, 2))
 			Expect(t, files).To(Contain(
 				buildRangeName(0, 4611686018427387903, 4),
 				buildRangeName(4611686018427387904, 9223372036854775807, 5),
 			))
+		})
+
+		o.Spec("it populates the rand field", func(t TB) {
+			files := toSlice(t.mockFileSystem.CreateInput.File, 2)
+
+			var rn router.RangeName
+			err := json.Unmarshal([]byte(files[0]), &rn)
+			Expect(t, err == nil).To(BeTrue())
+			Expect(t, rn.Rand).To(Not(Equal(int64(0))))
 		})
 	})
 
@@ -113,7 +122,7 @@ func TestBalancer(t *testing.T) {
 		})
 
 		o.Spec("it combines the range", func(t TB) {
-			files := toSlice(t.mockFileSystem.CreateInput.File, 1)
+			files := stripRand(toSlice(t.mockFileSystem.CreateInput.File, 1))
 			Expect(t, files).To(Contain(
 				buildRangeName(0, 18446744073709551615, 4),
 			))
@@ -262,7 +271,7 @@ func TestBalancerEmptyRanges(t *testing.T) {
 		})
 
 		o.Spec("it adds the minimum routes", func(t TB) {
-			s := toSlice(t.mockFileSystem.CreateInput.File, 3)
+			s := stripRand(toSlice(t.mockFileSystem.CreateInput.File, 3))
 			Expect(t, s).To(Contain(
 				buildRangeName(0, 6148914691236517205, 0),
 				buildRangeName(6148914691236517206, 12297829382473034410, 1),
@@ -292,6 +301,23 @@ func serviceMetrics(t TB, repeater chan string, m map[string]uint64) {
 		t.mockRangeMetrics.MetricsOutput.Err <- nil
 		repeater <- file
 	}
+}
+
+func stripRand(s []string) (results []string) {
+	for _, ss := range s {
+		var rn router.RangeName
+		if err := json.Unmarshal([]byte(ss), &rn); err != nil {
+			panic(err)
+		}
+		rn.Rand = 0
+
+		data, err := json.Marshal(rn)
+		if err != nil {
+			panic(err)
+		}
+		results = append(results, string(data))
+	}
+	return results
 }
 
 func toSlice(c chan string, count int) []string {

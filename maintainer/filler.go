@@ -3,6 +3,7 @@ package maintainer
 import (
 	"encoding/json"
 	"log"
+	"math/rand"
 	"sort"
 	"time"
 
@@ -76,6 +77,7 @@ func (f *Filler) findGap(start, end uint64, ranges []rangeInfo) (router.RangeNam
 	return router.RangeName{
 		Low:  start,
 		High: gapEnd,
+		Rand: rand.Int63(),
 	}, true
 }
 

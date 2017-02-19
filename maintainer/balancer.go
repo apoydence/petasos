@@ -3,6 +3,7 @@ package maintainer
 import (
 	"encoding/json"
 	"log"
+	"math/rand"
 	"sort"
 	"time"
 
@@ -98,6 +99,7 @@ func (b *Balancer) seedRanges() {
 			Term: i,
 			Low:  i*width + 1,
 			High: (i + 1) * width,
+			Rand: rand.Int63(),
 		}
 
 		if i == 0 {
@@ -134,6 +136,7 @@ func (b *Balancer) combineRange(first, next rangeInfo, lastTerm uint64) {
 		Term: lastTerm + 1,
 		Low:  min,
 		High: max,
+		Rand: rand.Int63(),
 	}
 
 	combinedName, _ := json.Marshal(combined)
@@ -152,12 +155,14 @@ func (b *Balancer) splitRange(last rangeInfo, lastTerm uint64) {
 		Term: lastTerm + 1,
 		Low:  last.hashRange.Low,
 		High: middle,
+		Rand: rand.Int63(),
 	}
 
 	high := router.RangeName{
 		Term: lastTerm + 2,
 		Low:  middle + 1,
 		High: last.hashRange.High,
+		Rand: rand.Int63(),
 	}
 
 	lowName, _ := json.Marshal(low)
@@ -262,6 +267,7 @@ func buildRangeName(low, high, term uint64) string {
 		Low:  low,
 		High: high,
 		Term: term,
+		Rand: rand.Int63(),
 	}
 
 	j, _ := json.Marshal(rn)
