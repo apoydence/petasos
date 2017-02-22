@@ -80,10 +80,10 @@ func TestReader(t *testing.T) {
 			}
 
 			Expect(t, t.mockFileSystem.ReaderInput.Name).To(
-				Chain(Receive(), MatchJSON(`{"Low":9223372036854775808,"High":10000000000000000000,"Term":0}`)),
+				Chain(Receive(), MatchJSON(`{"Low":9223372036854775808,"High":10000000000000000000,"Term":0,"Rand":0}`)),
 			)
 			Expect(t, t.mockFileSystem.ReaderInput.Name).To(
-				Chain(Receive(), MatchJSON(`{"Low":9223372036854775808,"High":18446744073709551615,"Term":2}`)),
+				Chain(Receive(), MatchJSON(`{"Low":9223372036854775808,"High":18446744073709551615,"Term":2,"Rand":0}`)),
 			)
 		})
 
@@ -99,13 +99,13 @@ func TestReader(t *testing.T) {
 			reader.Read()
 
 			Expect(t, t.mockFileSystem.ReaderInput.Name).To(
-				Chain(Receive(), MatchJSON(`{"Low":9223372036854775808,"High":10000000000000000000,"Term":0}`)),
+				Chain(Receive(), MatchJSON(`{"Low":9223372036854775808,"High":10000000000000000000,"Term":0,"Rand":0}`)),
 			)
 			Expect(t, t.mockFileSystem.ReaderInput.Name).To(
-				Chain(Receive(), MatchJSON(`{"Low":9223372036854775808,"High":18446744073709551615,"Term":2}`)),
+				Chain(Receive(), MatchJSON(`{"Low":9223372036854775808,"High":18446744073709551615,"Term":2,"Rand":0}`)),
 			)
 			Expect(t, t.mockFileSystem.ReaderInput.Name).To(
-				Chain(Receive(), MatchJSON(`{"Low":9223372036854775808,"High":18446744073709551615,"Term":2}`)),
+				Chain(Receive(), MatchJSON(`{"Low":9223372036854775808,"High":18446744073709551615,"Term":2,"Rand":0}`)),
 			)
 		})
 	})

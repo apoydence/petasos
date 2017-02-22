@@ -72,7 +72,7 @@ func TestRouter(t *testing.T) {
 			Expect(t, err == nil).To(BeTrue())
 
 			Expect(t, t.mockFileSystem.WriterInput.Name).To(
-				Chain(Receive(), MatchJSON(`{"Low":9223372036854775808,"High":18446744073709551615,"Term":3}`)),
+				Chain(Receive(), MatchJSON(`{"Low":9223372036854775808,"High":18446744073709551615,"Term":3,"Rand":0}`)),
 			)
 
 			Expect(t, t.mockWriter.WriteInput.Data).To(
@@ -86,7 +86,7 @@ func TestRouter(t *testing.T) {
 			Expect(t, err == nil).To(BeTrue())
 
 			Expect(t, t.mockFileSystem.WriterInput.Name).To(
-				Chain(Receive(), MatchJSON(`{"Low":0, "High":9223372036854775807,"Term":0}`)),
+				Chain(Receive(), MatchJSON(`{"Low":0, "High":9223372036854775807,"Term":0,"Rand":0}`)),
 			)
 
 			Expect(t, t.mockWriter.WriteInput.Data).To(
