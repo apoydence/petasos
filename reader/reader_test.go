@@ -34,9 +34,6 @@ func TestReader(t *testing.T) {
 		mockFileSystem := newMockFileSystem()
 		mockReader := newMockReader()
 
-		testhelpers.AlwaysReturn(mockFileSystem.ReaderOutput.Reader, mockReader)
-		close(mockFileSystem.ReaderOutput.Err)
-
 		return TR{
 			T:              t,
 			mockFileSystem: mockFileSystem,
@@ -55,28 +52,31 @@ func TestReader(t *testing.T) {
 			})
 			close(t.mockFileSystem.ListOutput.Err)
 
+			testhelpers.AlwaysReturn(t.mockFileSystem.ReaderOutput.Reader, t.mockReader)
+			close(t.mockFileSystem.ReaderOutput.Err)
+
 			return t
 		})
 
 		o.Spec("it reads from each file", func(t TR) {
-			reader := t.r.ReadFrom(10000000000000000000)
+			r := t.r.ReadFrom(10000000000000000000)
 
-			t.mockReader.ReadOutput.Data <- []byte("some-data-0")
+			t.mockReader.ReadOutput.Data <- reader.DataPacket{Payload: []byte("some-data-0")}
 			t.mockReader.ReadOutput.Err <- nil
 
-			t.mockReader.ReadOutput.Data <- nil
+			t.mockReader.ReadOutput.Data <- reader.DataPacket{}
 			t.mockReader.ReadOutput.Err <- io.EOF
 
-			t.mockReader.ReadOutput.Data <- []byte("some-data-1")
+			t.mockReader.ReadOutput.Data <- reader.DataPacket{Payload: []byte("some-data-1")}
 			t.mockReader.ReadOutput.Err <- nil
 
-			t.mockReader.ReadOutput.Data <- nil
+			t.mockReader.ReadOutput.Data <- reader.DataPacket{}
 			t.mockReader.ReadOutput.Err <- io.EOF
 
 			for i := 0; i < 2; i++ {
-				data, err := reader.Read()
+				data, err := r.Read()
 				Expect(t, err == nil).To(BeTrue())
-				Expect(t, data).To(Equal([]byte(fmt.Sprintf("some-data-%d", i))))
+				Expect(t, data.Payload).To(Equal([]byte(fmt.Sprintf("some-data-%d", i))))
 			}
 
 			Expect(t, t.mockFileSystem.ReaderInput.Name).To(

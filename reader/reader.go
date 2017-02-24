@@ -9,13 +9,19 @@ import (
 )
 
 type Reader interface {
-	Read() (data []byte, err error)
+	Read() (data DataPacket, err error)
 	Close()
 }
 
 type FileSystem interface {
 	List() (file []string, err error)
-	Reader(name string) (reader Reader, err error)
+	Reader(name string, startingIndex uint64) (reader Reader, err error)
+}
+
+type DataPacket struct {
+	Payload  []byte
+	Filename string
+	Index    uint64
 }
 
 type RouteReader struct {
@@ -37,7 +43,11 @@ type fileReader struct {
 	fs   FileSystem
 
 	currentFile Reader
-	history     map[hashRange]bool
+	current     string
+	currentIdx  uint64
+
+	history    map[hashRange]bool
+	historyIdx map[string]uint64
 }
 
 type hashRange struct {
@@ -47,23 +57,30 @@ type hashRange struct {
 
 func newFileReader(hash uint64, fs FileSystem) *fileReader {
 	return &fileReader{
-		hash:    hash,
-		fs:      fs,
-		history: make(map[hashRange]bool),
+		hash:       hash,
+		fs:         fs,
+		history:    make(map[hashRange]bool),
+		historyIdx: make(map[string]uint64),
 	}
 }
 
-func (r *fileReader) Read() (data []byte, err error) {
+func (r *fileReader) Read() (data DataPacket, err error) {
 	for {
 		if r.currentFile == nil {
 			next, err := r.fetchNextFile()
 			if err != nil {
-				return nil, err
+				return DataPacket{}, err
 			}
 
-			reader, err := r.fs.Reader(next.file)
+			// Grab the next index if we have one
+			idx, ok := r.historyIdx[next.file]
+			if ok {
+				idx++
+			}
+
+			reader, err := r.fs.Reader(next.file, idx)
 			if err != nil {
-				return nil, err
+				return DataPacket{}, err
 			}
 			r.currentFile = reader
 		}
@@ -72,12 +89,15 @@ func (r *fileReader) Read() (data []byte, err error) {
 		if err == io.EOF {
 			r.currentFile.Close()
 			r.currentFile = nil
+
 			continue
 		}
 
 		if err != nil {
-			return nil, err
+			return DataPacket{}, err
 		}
+
+		r.historyIdx[data.Filename] = data.Index
 
 		return data, nil
 	}
@@ -117,16 +137,21 @@ func (r *fileReader) fetchFromRange() (files []hashRange, err error) {
 		return nil, nil
 	}
 
-	sort.Sort(hashRanges(files))
+	sort.Sort(hashRanges(ranges))
 
 	var (
 		matchedRange []hashRange
 		lastRange    hashRange
 	)
 	for _, hashRange := range ranges {
-		if r.hash >= hashRange.r.Low && r.hash <= hashRange.r.High && r.notInHistory(hashRange) {
+		if r.hash < hashRange.r.Low || r.hash > hashRange.r.High {
+			continue
+		}
+
+		if r.notInHistory(hashRange) {
 			matchedRange = append(matchedRange, hashRange)
 		}
+
 		lastRange = hashRange
 	}
 
@@ -144,7 +169,6 @@ func (r *fileReader) setupRanges() (ranges []hashRange, err error) {
 	}
 
 	for _, file := range list {
-
 		var rn router.RangeName
 		err := json.Unmarshal([]byte(file), &rn)
 		if err != nil {

@@ -15,7 +15,8 @@ type mockFileSystem struct {
 	}
 	ReaderCalled chan bool
 	ReaderInput  struct {
-		Name chan string
+		Name          chan string
+		StartingIndex chan uint64
 	}
 	ReaderOutput struct {
 		Reader chan reader.Reader
@@ -30,6 +31,7 @@ func newMockFileSystem() *mockFileSystem {
 	m.ListOutput.Err = make(chan error, 100)
 	m.ReaderCalled = make(chan bool, 100)
 	m.ReaderInput.Name = make(chan string, 100)
+	m.ReaderInput.StartingIndex = make(chan uint64, 100)
 	m.ReaderOutput.Reader = make(chan reader.Reader, 100)
 	m.ReaderOutput.Err = make(chan error, 100)
 	return m
@@ -38,16 +40,17 @@ func (m *mockFileSystem) List() (file []string, err error) {
 	m.ListCalled <- true
 	return <-m.ListOutput.File, <-m.ListOutput.Err
 }
-func (m *mockFileSystem) Reader(name string) (reader reader.Reader, err error) {
+func (m *mockFileSystem) Reader(name string, startingIndex uint64) (reader reader.Reader, err error) {
 	m.ReaderCalled <- true
 	m.ReaderInput.Name <- name
+	m.ReaderInput.StartingIndex <- startingIndex
 	return <-m.ReaderOutput.Reader, <-m.ReaderOutput.Err
 }
 
 type mockReader struct {
 	ReadCalled chan bool
 	ReadOutput struct {
-		Data chan []byte
+		Data chan reader.DataPacket
 		Err  chan error
 	}
 	CloseCalled chan bool
@@ -56,12 +59,12 @@ type mockReader struct {
 func newMockReader() *mockReader {
 	m := &mockReader{}
 	m.ReadCalled = make(chan bool, 100)
-	m.ReadOutput.Data = make(chan []byte, 100)
+	m.ReadOutput.Data = make(chan reader.DataPacket, 100)
 	m.ReadOutput.Err = make(chan error, 100)
 	m.CloseCalled = make(chan bool, 100)
 	return m
 }
-func (m *mockReader) Read() (data []byte, err error) {
+func (m *mockReader) Read() (data reader.DataPacket, err error) {
 	m.ReadCalled <- true
 	return <-m.ReadOutput.Data, <-m.ReadOutput.Err
 }
