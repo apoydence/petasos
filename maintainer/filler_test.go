@@ -211,6 +211,7 @@ func TestFillerGapFromErrs(t *testing.T) {
 		mockRangeMetrics := newMockRangeMetrics()
 		maintainer.StartFiller(mockRangeMetrics, mockFileSystem,
 			maintainer.WithFillerInterval(time.Millisecond),
+			maintainer.WithFillerMinCount(0),
 		)
 
 		files := []string{

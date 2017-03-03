@@ -2,14 +2,20 @@ package maintainer
 
 import "time"
 
-func WithBalancerInterval(interval time.Duration) func(c *balancerConfig) {
-	return func(c *balancerConfig) {
+func WithFillerInterval(interval time.Duration) func(c *fillerConfig) {
+	return func(c *fillerConfig) {
 		c.interval = interval
 	}
 }
 
-func WithFillerInterval(interval time.Duration) func(c *fillerConfig) {
+func WithFillerMinCount(count uint64) func(c *fillerConfig) {
 	return func(c *fillerConfig) {
+		c.min = count
+	}
+}
+
+func WithBalancerInterval(interval time.Duration) func(c *balancerConfig) {
+	return func(c *balancerConfig) {
 		c.interval = interval
 	}
 }

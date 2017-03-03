@@ -17,6 +17,7 @@ type Filler struct {
 }
 
 type fillerConfig struct {
+	min      uint64
 	interval time.Duration
 }
 
@@ -25,6 +26,7 @@ type FillerOpts func(c *fillerConfig)
 func StartFiller(rangeMetrics RangeMetrics, fs FileSystem, opts ...FillerOpts) *Filler {
 	conf := fillerConfig{
 		interval: 5 * time.Second,
+		min:      3,
 	}
 
 	for _, opt := range opts {
@@ -43,8 +45,8 @@ func StartFiller(rangeMetrics RangeMetrics, fs FileSystem, opts ...FillerOpts) *
 
 func (f *Filler) run() {
 	for range time.Tick(f.conf.interval) {
-		ranges, lastTerm, _ := validRanges(f.fs, f.rangeMetrics)
-		if len(ranges) == 0 {
+		ranges, actual, lastTerm, _ := validRanges(f.fs, f.rangeMetrics)
+		if uint64(len(actual)) < f.conf.min {
 			continue
 		}
 
