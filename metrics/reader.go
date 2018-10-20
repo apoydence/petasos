@@ -1,6 +1,6 @@
 package metrics
 
-import "github.com/apoydence/petasos/router"
+import "github.com/poy/petasos/router"
 
 type NetworkReader interface {
 	ReadMetrics(addr, file string) (metric router.Metric, err error)

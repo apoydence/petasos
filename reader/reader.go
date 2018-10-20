@@ -5,7 +5,7 @@ import (
 	"io"
 	"sort"
 
-	"github.com/apoydence/petasos/router"
+	"github.com/poy/petasos/router"
 )
 
 type Reader interface {

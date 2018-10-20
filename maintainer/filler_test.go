@@ -4,12 +4,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/apoydence/eachers/testhelpers"
-	"github.com/apoydence/onpar"
-	. "github.com/apoydence/onpar/expect"
-	. "github.com/apoydence/onpar/matchers"
-	"github.com/apoydence/petasos/maintainer"
-	"github.com/apoydence/petasos/router"
+	"github.com/poy/eachers/testhelpers"
+	"github.com/poy/onpar"
+	. "github.com/poy/onpar/expect"
+	. "github.com/poy/onpar/matchers"
+	"github.com/poy/petasos/maintainer"
+	"github.com/poy/petasos/router"
 )
 
 func TestFillerOneWideGap(t *testing.T) {

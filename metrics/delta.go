@@ -3,7 +3,7 @@ package metrics
 import (
 	"sync"
 
-	"github.com/apoydence/petasos/router"
+	"github.com/poy/petasos/router"
 )
 
 type Metrics interface {

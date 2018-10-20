@@ -7,7 +7,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/apoydence/petasos/router"
+	"github.com/poy/petasos/router"
 )
 
 type Filler struct {

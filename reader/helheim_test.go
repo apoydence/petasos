@@ -5,7 +5,7 @@
 
 package reader_test
 
-import "github.com/apoydence/petasos/reader"
+import "github.com/poy/petasos/reader"
 
 type mockFileSystem struct {
 	ListCalled chan bool

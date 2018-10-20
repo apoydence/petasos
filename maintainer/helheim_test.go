@@ -5,7 +5,7 @@
 
 package maintainer_test
 
-import "github.com/apoydence/petasos/router"
+import "github.com/poy/petasos/router"
 
 type mockRangeMetrics struct {
 	MetricsCalled chan bool

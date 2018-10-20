@@ -5,7 +5,7 @@
 
 package router_test
 
-import "github.com/apoydence/petasos/router"
+import "github.com/poy/petasos/router"
 
 type mockWriter struct {
 	WriteCalled chan bool
